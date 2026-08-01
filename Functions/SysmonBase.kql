@@ -1,0 +1,72 @@
+Event
+| where Source == "Microsoft-Windows-Sysmon"
+| extend Parsed = parse_xml(EventData)
+| extend XmlFields = Parsed.DataItem.EventData.Data
+| mv-expand XmlFields
+| extend
+    FieldName = tostring(XmlFields["@Name"]),
+    FieldValue = tostring(XmlFields["#text"])
+| summarize Fields = make_bag(pack(FieldName, FieldValue))
+    by
+        TimeGenerated,
+        Computer,
+        EventID,
+        EventLevelName,
+        Source,
+        RenderedDescription
+| extend
+// Common fields
+    RuleName               = tostring(Fields.RuleName),
+    UtcTime                = todatetime(Fields.UtcTime),
+    ProcessGuid            = tostring(Fields.ProcessGuid),
+    ProcessId              = tolong(Fields.ProcessId),
+    Image                  = tostring(Fields.Image),
+    CommandLine            = tostring(Fields.CommandLine),
+    CurrentDirectory       = tostring(Fields.CurrentDirectory),
+    User                   = tostring(Fields.User),
+    ParentProcessGuid      = tostring(Fields.ParentProcessGuid),
+    ParentProcessId        = tolong(Fields.ParentProcessId),
+    ParentImage            = tostring(Fields.ParentImage),
+    ParentCommandLine      = tostring(Fields.ParentCommandLine),
+    ParentUser             = tostring(Fields.ParentUser),
+    Company                = tostring(Fields.Company),
+    Product                = tostring(Fields.Product),
+    Description            = tostring(Fields.Description),
+    OriginalFileName       = tostring(Fields.OriginalFileName),
+    FileVersion            = tostring(Fields.FileVersion),
+    IntegrityLevel         = tostring(Fields.IntegrityLevel),
+    LogonGuid              = tostring(Fields.LogonGuid),
+    LogonId                = tostring(Fields.LogonId),
+    TerminalSessionId      = tostring(Fields.TerminalSessionId),
+    Hashes                 = tostring(Fields.Hashes),
+// Network
+    Protocol               = tostring(Fields.Protocol),
+    SourceIp               = tostring(Fields.SourceIp),
+    SourceHostname         = tostring(Fields.SourceHostname),
+    SourcePort             = toint(Fields.SourcePort),
+    SourcePortName         = tostring(Fields.SourcePortName),
+    DestinationIp          = tostring(Fields.DestinationIp),
+    DestinationHostname    = tostring(Fields.DestinationHostname),
+    DestinationPort        = toint(Fields.DestinationPort),
+    DestinationPortName    = tostring(Fields.DestinationPortName),
+// File
+    TargetFilename         = tostring(Fields.TargetFilename),
+    CreationUtcTime        = todatetime(Fields.CreationUtcTime),
+// Registry
+    EventType              = tostring(Fields.EventType),
+    TargetObject           = tostring(Fields.TargetObject),
+    Details                = tostring(Fields.Details),
+// DNS
+    QueryName              = tostring(Fields.QueryName),
+    QueryStatus            = tostring(Fields.QueryStatus),
+    QueryResults           = tostring(Fields.QueryResults),
+// Image Load
+    ImageLoaded            = tostring(Fields.ImageLoaded),
+    Signed                 = tostring(Fields.Signed),
+    Signature              = tostring(Fields.Signature),
+    SignatureStatus        = tostring(Fields.SignatureStatus)
+| extend
+    MD5 = extract(@"MD5=([^,]+)", 1, Hashes),
+    SHA1 = extract(@"SHA1=([^,]+)", 1, Hashes),
+    SHA256 = extract(@"SHA256=([^,]+)", 1, Hashes),
+    IMPHASH = extract(@"IMPHASH=([^,]+)", 1, Hashes)
