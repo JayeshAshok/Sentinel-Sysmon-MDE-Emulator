@@ -1,0 +1,118 @@
+// ============================================================================
+// DeviceProcessEvents_Sysmon.kql (v3 - Extended Defender Compatibility)
+// Depends on: SysmonBase()
+// ============================================================================
+SysmonBase()
+| where EventID in (1,5,7,8,10,25)
+// -----------------------------------------------------------------------------
+// Common derived fields
+// -----------------------------------------------------------------------------
+| extend
+    FileName = extract(@"([^\\]+)$", 1, Image),
+    InitiatingProcessFileName = extract(@"([^\\]+)$", 1, ParentImage),
+    AccountDomain = iff(User contains "\\", split(User, "\\")[0], ""),
+    AccountName = iff(User contains "\\", split(User, "\\")[1], User),
+    InitiatingProcessAccountDomain = iff(ParentUser contains "\\", split(ParentUser, "\\")[0], ""),
+    InitiatingProcessAccountName = iff(ParentUser contains "\\", split(ParentUser, "\\")[1], ParentUser)
+// -----------------------------------------------------------------------------
+// Defender ActionType
+// -----------------------------------------------------------------------------
+| extend
+    ActionType = case(
+        EventID == 1,  "ProcessCreated",
+        EventID == 5,  "ProcessTerminated",
+        EventID == 7,  "ImageLoaded",
+        EventID == 8,  "CreateRemoteThread",
+        EventID == 10, "OpenProcess",
+        EventID == 25, "ProcessTampering",
+        "Unknown")
+// -----------------------------------------------------------------------------
+// Derived values
+// -----------------------------------------------------------------------------
+| extend
+    ProcessTokenElevation = case(
+        IntegrityLevel =~ "System","Full",
+        IntegrityLevel =~ "High","Full",
+        IntegrityLevel =~ "Medium","Limited",
+        IntegrityLevel =~ "Low","Limited",
+        IntegrityLevel =~ "AppContainer","AppContainer",
+        ""),
+    ReportId = abs(hash(strcat(Computer,"|",ProcessGuid,"|",tostring(UtcTime)))),
+    AdditionalFields = bag_pack(
+        "SysmonEventID", EventID,
+        "RuleName", RuleName,
+        "Hashes", Hashes,
+        "ParentProcessGuid", ParentProcessGuid,
+        "CurrentDirectory", CurrentDirectory,
+        "IntegrityLevel", IntegrityLevel,
+        "TerminalSessionId", TerminalSessionId
+    )
+// -----------------------------------------------------------------------------
+// Defender-compatible schema
+// -----------------------------------------------------------------------------
+| project
+    Timestamp = TimeGenerated,
+    DeviceId = "",
+    DeviceName = Computer,
+    ActionType,
+    FileName,
+    FolderPath = Image,
+    FileSize = long(null),
+    SHA1,
+    SHA256,
+    MD5,
+    ProcessVersionInfoCompanyName = Company,
+    ProcessVersionInfoProductName = Product,
+    ProcessVersionInfoProductVersion = FileVersion,
+    ProcessVersionInfoInternalFileName = OriginalFileName,
+    ProcessVersionInfoOriginalFileName = OriginalFileName,
+    ProcessVersionInfoFileDescription = Description,
+    ProcessVersionInfoFileVersion = FileVersion,
+    ProcessVersionInfoLegalCopyright = "",
+    ProcessIntegrityLevel = IntegrityLevel,
+    ProcessTokenElevation,
+    ProcessId,
+    ProcessUniqueId = ProcessGuid,
+    ProcessCommandLine = CommandLine,
+    ProcessCreationTime = UtcTime,
+    AccountDomain,
+    AccountName,
+    AccountSid = "",
+    AccountUpn = "",
+    AccountObjectId = "",
+    LogonId,
+    CreatedProcessSessionId = tolong(TerminalSessionId),
+    InitiatingProcessAccountDomain,
+    InitiatingProcessAccountName,
+    InitiatingProcessAccountSid = "",
+    InitiatingProcessAccountUpn = "",
+    InitiatingProcessAccountObjectId = "",
+    InitiatingProcessIntegrityLevel = "",
+    InitiatingProcessTokenElevation = "",
+    InitiatingProcessId = ParentProcessId,
+    InitiatingProcessUniqueId = ParentProcessGuid,
+    InitiatingProcessCreationTime = datetime(null),
+    InitiatingProcessFolderPath = ParentImage,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine = ParentCommandLine,
+    InitiatingProcessSHA1 = "",
+    InitiatingProcessSHA256 = "",
+    InitiatingProcessMD5 = "",
+    InitiatingProcessVersionInfoCompanyName = "",
+    InitiatingProcessVersionInfoProductName = "",
+    InitiatingProcessVersionInfoProductVersion = "",
+    InitiatingProcessVersionInfoInternalFileName = "",
+    InitiatingProcessVersionInfoOriginalFileName = "",
+    InitiatingProcessVersionInfoFileDescription = "",
+    InitiatingProcessVersionInfoFileVersion = "",
+    InitiatingProcessSignerType = "",
+    InitiatingProcessSignatureStatus = "",
+    IsProcessRemoteSession = false,
+    ProcessRemoteSessionIP = "",
+    ProcessRemoteSessionDeviceName = "",
+    IsInitiatingProcessRemoteSession = false,
+    InitiatingProcessRemoteSessionIP = "",
+    InitiatingProcessRemoteSessionDeviceName = "",
+    AppGuardContainerId = "",
+    ReportId,
+    AdditionalFields
