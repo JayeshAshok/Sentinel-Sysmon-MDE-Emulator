@@ -1,0 +1,72 @@
+// ============================================================================
+// DeviceFileEvents_Sysmon
+// Built on SysmonBase()
+// Maps Sysmon Event ID 11 to a Defender-like DeviceFileEvents schema
+// ============================================================================
+SysmonBase()
+| where EventID == 11
+// -----------------------------------------------------------------------------
+// Derived fields
+// -----------------------------------------------------------------------------
+| extend
+    FileName =
+        extract(@"([^\\]+)$",1,TargetFilename),
+    FolderPath =
+        replace_regex(TargetFilename, @"\\[^\\]+$", ""),
+    InitiatingProcessFileName =
+        extract(@"([^\\]+)$",1,Image),
+    InitiatingProcessAccountDomain =
+        iff(User contains "\\",
+            split(User,"\\")[0],
+            ""),
+    InitiatingProcessAccountName =
+        iff(User contains "\\",
+            split(User,"\\")[1],
+            User)
+// -----------------------------------------------------------------------------
+// Defender ActionType
+// -----------------------------------------------------------------------------
+| extend
+    ActionType = "FileCreated"
+// -----------------------------------------------------------------------------
+// Synthetic fields
+// -----------------------------------------------------------------------------
+| extend
+    ReportId =
+        abs(hash(
+            strcat(
+                Computer,
+                "|",
+                ProcessGuid,
+                "|",
+                TargetFilename,
+                "|",
+                tostring(UtcTime)))),
+    AdditionalFields =
+        bag_pack(
+            "SysmonEventID", EventID,
+            "RuleName", RuleName,
+            "CreationUtcTime", CreationUtcTime
+        )
+// -----------------------------------------------------------------------------
+// Defender-compatible schema
+// -----------------------------------------------------------------------------
+| project
+Timestamp = TimeGenerated,
+DeviceId = "",
+DeviceName = Computer,
+ActionType,
+FileName,
+FolderPath,
+SHA1,
+SHA256,
+MD5,
+InitiatingProcessId = ProcessId,
+InitiatingProcessUniqueId = ProcessGuid,
+InitiatingProcessFileName,
+InitiatingProcessFolderPath = Image,
+InitiatingProcessCommandLine = CommandLine,
+InitiatingProcessAccountDomain,
+InitiatingProcessAccountName,
+ReportId,
+AdditionalFields
