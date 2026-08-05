@@ -8,14 +8,14 @@ Event
     FieldValue = tostring(XmlFields["#text"])
 | summarize Fields = make_bag(pack(FieldName, FieldValue))
     by
-        TimeGenerated,
-        Computer,
-        EventID,
-        EventLevelName,
-        Source,
-        RenderedDescription
+    TimeGenerated,
+    Computer,
+    EventID,
+    EventLevelName,
+    Source,
+    RenderedDescription
 | extend
-// Common fields
+    // Common fields
     RuleName               = tostring(Fields.RuleName),
     UtcTime                = todatetime(Fields.UtcTime),
     ProcessGuid            = tostring(Fields.ProcessGuid),
@@ -39,32 +39,37 @@ Event
     LogonId                = tostring(Fields.LogonId),
     TerminalSessionId      = tostring(Fields.TerminalSessionId),
     Hashes                 = tostring(Fields.Hashes),
-// Network
+    // Network
     Protocol               = tostring(Fields.Protocol),
+    Initiated              = tostring(Fields.Initiated),
+    SourceIsIpv6           = tostring(Fields.SourceIsIpv6),
     SourceIp               = tostring(Fields.SourceIp),
     SourceHostname         = tostring(Fields.SourceHostname),
     SourcePort             = toint(Fields.SourcePort),
     SourcePortName         = tostring(Fields.SourcePortName),
+    DestinationIsIpv6      = tostring(Fields.DestinationIsIpv6),
     DestinationIp          = tostring(Fields.DestinationIp),
     DestinationHostname    = tostring(Fields.DestinationHostname),
     DestinationPort        = toint(Fields.DestinationPort),
     DestinationPortName    = tostring(Fields.DestinationPortName),
-// File
+    // File
     TargetFilename         = tostring(Fields.TargetFilename),
     CreationUtcTime        = todatetime(Fields.CreationUtcTime),
-// Registry
+    Archived              = tostring(Fields.Archived),
+    IsExecutable          = tostring(Fields.IsExecutable),
+    // Registry
     EventType              = tostring(Fields.EventType),
     TargetObject           = tostring(Fields.TargetObject),
     Details                = tostring(Fields.Details),
-// DNS
+    // DNS
     QueryName              = tostring(Fields.QueryName),
     QueryStatus            = tostring(Fields.QueryStatus),
     QueryResults           = tostring(Fields.QueryResults),
-// Image Load
-    ImageLoaded            = tostring(Fields.ImageLoaded),
-    Signed                 = tostring(Fields.Signed),
-    Signature              = tostring(Fields.Signature),
-    SignatureStatus        = tostring(Fields.SignatureStatus)
+    // Image Load
+    ImageLoaded           = tostring(Fields.ImageLoaded),
+    Signed                = tostring(Fields.Signed),
+    Signature             = tostring(Fields.Signature),
+    SignatureStatus       = tostring(Fields.SignatureStatus)
 | extend
     MD5 = extract(@"MD5=([^,]+)", 1, Hashes),
     SHA1 = extract(@"SHA1=([^,]+)", 1, Hashes),

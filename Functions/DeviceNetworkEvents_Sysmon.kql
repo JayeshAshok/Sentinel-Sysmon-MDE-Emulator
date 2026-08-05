@@ -1,0 +1,95 @@
+// ============================================================================
+// DeviceNetworkEvents_Sysmon
+// Built on SysmonBase()
+// Maps Sysmon Event ID 3 to a Defender-like DeviceNetworkEvents schema
+// ============================================================================
+SysmonBase()
+| where EventID == 3
+// -----------------------------------------------------------------------------
+// Derived fields
+// -----------------------------------------------------------------------------
+| extend
+    InitiatingProcessFileName = extract(@"([^\\]+)$", 1, Image),
+    InitiatingProcessAccountDomain =
+        iff(User contains "\\",
+            split(User, "\\")[0],
+            ""),
+    InitiatingProcessAccountName =
+        iff(User contains "\\",
+            split(User, "\\")[1],
+            User),
+    LocalIPType =
+        case(
+            SourceIsIpv6 == "true", "IPv6",
+            SourceIsIpv6 == "false", "IPv4",
+            "Unknown"),
+    RemoteIPType =
+        case(
+            DestinationIsIpv6 == "true", "IPv6",
+            DestinationIsIpv6 == "false", "IPv4",
+            "Unknown")
+// -----------------------------------------------------------------------------
+// Defender ActionType
+// -----------------------------------------------------------------------------
+| extend
+    ActionType =
+        iff(Initiated == "true",
+            "NetworkConnectionSuccess",
+            "NetworkConnection")
+// -----------------------------------------------------------------------------
+// Synthetic fields
+// -----------------------------------------------------------------------------
+| extend
+    ReportId =
+        abs(hash(
+            strcat(
+                Computer,
+                "|",
+                ProcessGuid,
+                "|",
+                tostring(UtcTime)))),
+    AdditionalFields =
+        bag_pack(
+            "SysmonEventID", EventID,
+            "RuleName", RuleName,
+            "Initiated", Initiated,
+            "SourceHostname", SourceHostname,
+            "DestinationHostname", DestinationHostname,
+            "SourceIsIpv6", SourceIsIpv6,
+            "DestinationIsIpv6", DestinationIsIpv6
+        )
+// -----------------------------------------------------------------------------
+// Defender-compatible schema
+// -----------------------------------------------------------------------------
+| project
+Timestamp = TimeGenerated,
+DeviceId = "",
+DeviceName = Computer,
+ActionType,
+LocalIP = SourceIp,
+LocalPort = SourcePort,
+LocalIPType,
+RemoteIP = DestinationIp,
+RemotePort = DestinationPort,
+RemoteIPType,
+RemoteUrl = DestinationHostname,
+Protocol,
+LocalPortName = SourcePortName,
+RemotePortName = DestinationPortName,
+InitiatingProcessId = ProcessId,
+InitiatingProcessUniqueId = ProcessGuid,
+InitiatingProcessFileName,
+InitiatingProcessFolderPath = Image,
+InitiatingProcessCommandLine = CommandLine,
+InitiatingProcessAccountDomain,
+InitiatingProcessAccountName,
+InitiatingProcessSHA1 = SHA1,
+InitiatingProcessSHA256 = SHA256,
+InitiatingProcessMD5 = MD5,
+LocalMacAddress = "",
+RemoteMacAddress = "",
+RemoteDeviceName = "",
+AzureResourceId = "",
+AppGuardContainerId = "",
+ReportId,
+AdditionalFields
