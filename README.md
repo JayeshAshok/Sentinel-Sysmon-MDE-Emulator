@@ -17,17 +17,15 @@ This project recreates Microsoft Defender XDR Advanced Hunting tables using Sysm
 
 ## Installation
 
-1. Install Sysmon on the Windows machine.
-2. Install and configure the Azure Monitor Agent (AMA).
-3. Onboard the Windows machine to Azure.
-4. Create a Data Collection Rule (DCR) to collect:
-   - Sysmon events into the **Event** table
-5. In Microsoft Sentinel, create the following KQL functions:
+1. Complete all the prerequisites described above.
+2. In Microsoft Sentinel, create the following KQL functions from the files in the `Functions` directory:
    - `SysmonBase()`
    - `DeviceProcessEvents_Sysmon()`
    - `DeviceNetworkEvents_Sysmon()`
    - `DeviceFileEvents_Sysmon()`
    - `DeviceRegistryEvents_Sysmon()`
+3. Save each function.
+4. Run the validation queries in the `TestQueries` directory to verify the functions are working correctly.
 
 ## Architecture
 
