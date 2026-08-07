@@ -48,13 +48,12 @@ Sysmon Events
 
 ## Supported Sysmon Events
 
-| Sysmon Event ID | Description | Defender Table |
-|----------------:|------------|----------------|
-| 1 | Process Create | DeviceProcessEvents_Sysmon |
+| Sysmon Event ID(s) | Description | Defender-Compatible Function |
+|--------------------|-------------|------------------------------|
+| 1, 5, 7, 8, 10, 25 | Process-related events (Process Create, Process Terminate, Image Load, Create Remote Thread, Process Access, Process Tampering) | DeviceProcessEvents_Sysmon |
 | 3 | Network Connection | DeviceNetworkEvents_Sysmon |
 | 11 | File Create | DeviceFileEvents_Sysmon |
-| 12 | Registry Object Create/Delete | DeviceRegistryEvents_Sysmon |
-| 13 | Registry Value Set | DeviceRegistryEvents_Sysmon |
+| 12, 13 | Registry Object Create/Delete, Registry Value Set | DeviceRegistryEvents_Sysmon |
 
 ## Notes
 
