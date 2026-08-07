@@ -1,0 +1,10 @@
+DeviceFileEvents_Sysmon()
+| project
+    Timestamp,
+    DeviceName,
+    ActionType,
+    FileName,
+    FolderPath,
+    InitiatingProcessFileName
+| order by Timestamp desc
+| take 20

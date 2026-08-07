@@ -1,0 +1,11 @@
+DeviceProcessEvents_Sysmon()
+| project
+    Timestamp,
+    DeviceName,
+    ActionType,
+    FileName,
+    ProcessCommandLine,
+    AccountName,
+    SHA256
+| order by Timestamp desc
+| take 20

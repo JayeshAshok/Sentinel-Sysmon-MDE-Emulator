@@ -1,0 +1,10 @@
+DeviceRegistryEvents_Sysmon()
+| project
+    Timestamp,
+    DeviceName,
+    ActionType,
+    RegistryKey,
+    RegistryValueData,
+    InitiatingProcessFileName
+| order by Timestamp desc
+| take 20

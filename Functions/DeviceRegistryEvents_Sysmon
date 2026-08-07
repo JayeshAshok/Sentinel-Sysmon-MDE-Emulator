@@ -1,0 +1,79 @@
+// ============================================================================
+// DeviceRegistryEvents_Sysmon
+// Built on SysmonBase()
+// Maps Sysmon Registry Events (12 & 13) to a Defender-like schema
+// ============================================================================
+SysmonBase()
+| where EventID in (12,13)
+// -----------------------------------------------------------------------------
+// Derived fields
+// -----------------------------------------------------------------------------
+| extend
+    RegistryKey = TargetObject,
+    RegistryValueName =
+        extract(@"\\([^\\]+)$", 1, TargetObject),
+    InitiatingProcessFileName =
+        extract(@"([^\\]+)$", 1, Image),
+    InitiatingProcessAccountDomain =
+        iff(User contains "\\",
+            split(User, "\\")[0],
+            ""),
+    InitiatingProcessAccountName =
+        iff(User contains "\\",
+            split(User, "\\")[1],
+            User)
+// -----------------------------------------------------------------------------
+// Defender ActionType
+// -----------------------------------------------------------------------------
+| extend
+    ActionType =
+        case(
+            EventType == "CreateKey", "RegistryKeyCreated",
+            EventType == "DeleteKey", "RegistryKeyDeleted",
+            EventType == "SetValue", "RegistryValueSet",
+            strcat("Registry", EventType)
+        )
+// -----------------------------------------------------------------------------
+// Synthetic fields
+// -----------------------------------------------------------------------------
+| extend
+    ReportId =
+        abs(hash(
+            strcat(
+                Computer,
+                "|",
+                ProcessGuid,
+                "|",
+                TargetObject,
+                "|",
+                tostring(UtcTime)))),
+    AdditionalFields =
+        bag_pack(
+            "SysmonEventID", EventID,
+            "RuleName", RuleName,
+            "EventType", EventType,
+            "Details", Details
+        )
+// -----------------------------------------------------------------------------
+// Defender-compatible schema
+// -----------------------------------------------------------------------------
+| project
+Timestamp = TimeGenerated,
+DeviceId = "",
+DeviceName = Computer,
+ActionType,
+RegistryKey,
+RegistryValueName,
+RegistryValueData = Details,
+InitiatingProcessId = ProcessId,
+InitiatingProcessUniqueId = ProcessGuid,
+InitiatingProcessFileName,
+InitiatingProcessFolderPath = Image,
+InitiatingProcessCommandLine = CommandLine,
+InitiatingProcessAccountDomain,
+InitiatingProcessAccountName,
+InitiatingProcessSHA1 = SHA1,
+InitiatingProcessSHA256 = SHA256,
+InitiatingProcessMD5 = MD5,
+ReportId,
+AdditionalFields

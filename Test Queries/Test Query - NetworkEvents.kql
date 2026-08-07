@@ -1,0 +1,12 @@
+DeviceNetworkEvents_Sysmon()
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessFileName,
+    LocalIP,
+    RemoteIP,
+    RemotePort,
+    Protocol,
+    ActionType
+| order by Timestamp desc
+| take 20
